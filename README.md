@@ -2,6 +2,8 @@
 
 **Analista Isaac · Região Duque de Caxias**
 
+App: https://isaacsilva-bot.github.io/rota-motorista-duque-de-caxias/
+
 App web em que o motorista digita o próprio ID e vê:
 
 - **Rota:** rota, tag, ajudante, quantidade de lojas (códigos), quantidade de agências a serem fechadas, KM da rota, pedágio, horário de início e horário de finalização da rota. Vem da aba *Informações Consolidadas da Rota*.
@@ -14,4 +16,4 @@ O `data.json` não guarda nenhum ID nem dado em texto aberto. Os dados de cada m
 1. Exporte a planilha "Horários" em `.xlsx`.
 2. `pip install openpyxl cryptography`
 3. `python tools/build_data.py Horarios.xlsx data.json`
-4. Faça commit do novo `data.json`. O GitHub Pages publica sozinho.
+4. Faça commit do novo `data.json` no branch **gh-pages** (é o branch publicado pelo GitHub Pages).

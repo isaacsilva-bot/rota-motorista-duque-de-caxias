@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#EE4D2D">
+<title>Informações consolidadas Sobre a Rota</title>
+<style>
+  :root{--brand:#EE4D2D;--brand-d:#C93A1E;--ink:#1F2328;--muted:#5E6670;--line:#E5E7EB;--bg:#F5F6F8;--card:#fff;--ok:#16794C;--warn:#B42318}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink);-webkit-text-size-adjust:100%}
+  header{background:var(--brand);color:#fff;padding:28px 20px 72px;text-align:center}
+  header h1{margin:0 0 10px;font-size:1.45rem;line-height:1.25}
+  header p{margin:2px 0;font-size:.98rem;opacity:.95}
+  main{max-width:860px;margin:-52px auto 40px;padding:0 14px}
+  .card{background:var(--card);border-radius:14px;box-shadow:0 2px 10px rgba(0,0,0,.07);padding:20px;margin-bottom:16px}
+  label{display:block;font-weight:700;font-size:1.05rem;margin-bottom:10px}
+  .row{display:flex;gap:10px}
+  input{flex:1;min-width:0;font-size:1.15rem;padding:13px 14px;border:2px solid var(--line);border-radius:10px;outline:none}
+  input:focus{border-color:var(--brand)}
+  button{font-size:1.05rem;font-weight:700;padding:0 20px;border:0;border-radius:10px;background:var(--brand);color:#fff;cursor:pointer}
+  button:hover{background:var(--brand-d)} button:disabled{opacity:.6;cursor:wait}
+  .msg{margin-top:12px;font-size:.95rem;color:var(--muted);min-height:1.2em}
+  .msg.err{color:var(--warn);font-weight:600}
+  h2{font-size:1.1rem;margin:0 0 14px;display:flex;align-items:center;gap:8px}
+  h2 .pill{background:#FFF1EC;color:var(--brand-d);font-size:.8rem;padding:3px 10px;border-radius:99px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+  .kv{border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+  .kv.wide{grid-column:1/-1}
+  .k{font-size:.74rem;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);margin-bottom:3px}
+  .v{font-size:1.05rem;font-weight:700;word-break:break-word}
+  .stop{border:1px solid var(--line);border-left:5px solid var(--brand);border-radius:10px;padding:14px;margin-bottom:12px}
+  .stop .top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:8px}
+  .stop .name{font-weight:700;font-size:1.02rem}
+  .seq{flex:none;background:var(--brand);color:#fff;font-weight:700;border-radius:8px;padding:4px 9px;font-size:.85rem}
+  .addr{color:var(--muted);font-size:.93rem;margin:0 0 10px}
+  .addr a{color:inherit}
+  .times{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  .times .kv{padding:8px}
+  .times .v{font-size:1rem}
+  .in .v{color:#1D4ED8}.out .v{color:var(--warn)}
+  .empty{padding:14px;border-radius:10px;background:#F0FDF4;color:var(--ok);font-weight:600;text-align:center}
+  .hidden{display:none}
+  footer{text-align:center;color:var(--muted);font-size:.8rem;padding:0 14px 30px}
+  .link{background:none;color:var(--brand-d);padding:0;font-size:.95rem;text-decoration:underline}
+  .link:hover{background:none}
+  @media (max-width:560px){.times{grid-template-columns:repeat(2,1fr)} header h1{font-size:1.25rem}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Informações consolidadas Sobre a Rota</h1>
+  <p>Analista Isaac</p>
+  <p>Região Duque de Caxias</p>
+</header>
+
+<main>
+  <form class="card" id="f" autocomplete="off">
+    <label for="id">Insira o seu ID:</label>
+    <div class="row">
+      <input id="id" inputmode="numeric" placeholder="Ex.: 4354629" required>
+      <button id="btn" type="submit">Buscar</button>
+    </div>
+    <div class="msg" id="msg"></div>
+  </form>
+
+  <div id="res" class="hidden">
+    <section class="card">
+      <h2>Informações da Rota</h2>
+      <div class="grid" id="rota"></div>
+    </section>
+    <section class="card">
+      <h2>Agências <span class="pill" id="qtd"></span></h2>
+      <div id="pontos"></div>
+    </section>
+    <div style="text-align:center"><button class="link" type="button" id="sair">Consultar outro ID</button></div>
+  </div>
+</main>
+<footer id="upd"></footer>
+
+<script>
+(() => {
+  const $ = s => document.getElementById(s);
+  const enc = new TextEncoder(), dec = new TextDecoder();
+  const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+  const hex = b => [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, "0")).join("");
+  const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  let DATA = null;
+
+  async function load() {
+    if (DATA) return DATA;
+    const r = await fetch("data.json?t=" + Date.now(), {cache: "no-store"});
+    if (!r.ok) throw new Error("data");
+    DATA = await r.json();
+    $("upd").textContent = "Dados atualizados em " + DATA.atualizado;
+    return DATA;
+  }
+  load().catch(() => {});
+
+  async function lookup(id) {
+    const d = await load();
+    const base = await crypto.subtle.importKey("raw", enc.encode(id), "PBKDF2", false, ["deriveBits"]);
+    const bits = await crypto.subtle.deriveBits({name: "PBKDF2", hash: "SHA-256", salt: b64(d.salt), iterations: d.iter}, base, 512);
+    const tag = hex(bits.slice(0, 32));
+    const blob = d.r[tag];
+    if (!blob) return null;
+    const raw = b64(blob);
+    const key = await crypto.subtle.importKey("raw", bits.slice(32), "AES-GCM", false, ["decrypt"]);
+    const pt = await crypto.subtle.decrypt({name: "AES-GCM", iv: raw.slice(0, 12)}, key, raw.slice(12));
+    return JSON.parse(dec.decode(pt));
+  }
+
+  const kv = (k, v, cls = "") => `<div class="kv ${cls}"><div class="k">${esc(k)}</div><div class="v">${esc(v === "" || v == null ? "—" : v)}</div></div>`;
+
+  function render(x) {
+    const r = x.rota || {};
+    const km = r.KM ? r.KM + " km" : "";
+    $("rota").innerHTML = x.rota ? [
+      kv("Rota", r.ROTA, "wide"), kv("Tag", r.TAG, "wide"),
+      kv("Ajudante", r.AJUDANTE), kv("Quantidade de lojas (códigos)", r.LOJAS),
+      kv("Quantidade de agências a serem fechadas", r.AGENCIAS),
+      kv("KM da rota", km), kv("Pedágio", r.PEDAGIO),
+      kv("Horário de início", r.INICIO), kv("Horário de finalização da rota", r.FIM)
+    ].join("") : `<div class="kv wide"><div class="v">Rota não encontrada na aba de informações consolidadas.</div></div>`;
+
+    const p = x.pontos || [];
+    $("qtd").textContent = p.length ? p.length + (p.length > 1 ? " agências" : " agência") : "0";
+    $("pontos").innerHTML = p.length ? p.map(s => `
+      <div class="stop">
+        <div class="top"><div class="name">${esc(s.NOME)}</div><span class="seq">Seq. ${esc(s.SEQ || "—")}</span></div>
+        <p class="addr">📍 <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.END)}" target="_blank" rel="noopener">${esc(s.END)}</a></p>
+        <div class="times">
+          ${kv("PUP ID", s.PUP)}${kv("Horário de fechamento", s.FECH)}
+          ${kv("Horário de chegada", s.CHEG, "in")}${kv("Horário de saída", s.SAIDA, "out")}
+        </div>
+      </div>`).join("")
+      : `<div class="empty">Você não possui agências para fechar.</div>`;
+    $("res").classList.remove("hidden");
+  }
+
+  $("f").addEventListener("submit", async e => {
+    e.preventDefault();
+    const id = $("id").value.trim();
+    if (!id) return;
+    $("btn").disabled = true; $("res").classList.add("hidden");
+    $("msg").className = "msg"; $("msg").textContent = "Buscando...";
+    try {
+      const x = await lookup(id);
+      if (!x) { $("msg").className = "msg err"; $("msg").textContent = "ID não encontrado. Confira o número e tente novamente."; }
+      else { $("msg").textContent = ""; render(x); }
+    } catch (err) {
+      $("msg").className = "msg err"; $("msg").textContent = "Não foi possível carregar os dados. Verifique sua conexão.";
+    } finally { $("btn").disabled = false; }
+  });
+
+  $("sair").addEventListener("click", () => {
+    $("res").classList.add("hidden"); $("rota").innerHTML = $("pontos").innerHTML = "";
+    $("id").value = ""; $("id").focus(); window.scrollTo(0, 0);
+  });
+})();
+</script>
+</body>
+</html>
